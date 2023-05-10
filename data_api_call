@@ -1,0 +1,35 @@
+#API Key to access articles
+key <- "" # Create Key here: https://devtools.dol.gov/developer
+
+# Initialize variables
+base_url <- "https://data.dol.gov/get/inspection/columns/ACTIVITY_NR:SITE_STATE:CLOSE_CASE_DATE/filter_column/CLOSE_CASE_DATE="
+year <- "21" 
+all_records <- data.frame(ACTIVITY_NR = character(),
+                          SITE_STATE = character(),
+                          CLOSE_CASE_DATE = character(),
+                          RNUM = character(),
+                          stringsAsFactors = FALSE)
+
+# Loop through each month and gather the data for each day of the month
+for (month in c("SEP", "OCT", "NOV", "DEC", "JAN", "FEB","MAR", "APR","MAY","JUN","JUL","AUG")) {
+  for (day in c("01","15")) {
+    
+    # Generate the URL for the current day and month
+    url <- paste0(base_url, day, "-", month, "-", year)
+    
+    # Make a request to the API to retrieve the data
+    response <- GET(url, add_headers("X-API-KEY" = key))
+    
+    # Check for errors and handle them if they occur
+    if (status_code(response) != 200) {
+      stop("Error: API request failed with status code ", status_code(response))
+    }
+    
+    # Extract the data from the response and add it to the list of all records
+    new_records <- fromJSON(rawToChar(response$content), flatten = TRUE)
+    #print(paste0("Month: ", month, ", records: ", length(new_records)))
+    all_records <- rbind(all_records, new_records)
+  }
+}
+# 3 mins to excute loop
+all_records$CLOSE_CASE_DATE <- as.Date(all_records$CLOSE_CASE_DATE, format = "%d-%b-%y")
